@@ -465,7 +465,15 @@ const sfx={
 };
 
 const loadAud = async () => {
-    if(audioCtx.state === 'suspended') await audioCtx.resume();
+    if(audioCtx.state === 'suspended') {
+        // Play a silent dummy buffer synchronously to force iOS to unlock the audio context
+        const dummy = audioCtx.createBuffer(1, 1, 22050);
+        const src = audioCtx.createBufferSource();
+        src.buffer = dummy;
+        src.connect(audioCtx.destination);
+        src.start(0);
+        await audioCtx.resume();
+    }
 };
 
 const rng=m=>{let a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%m};
