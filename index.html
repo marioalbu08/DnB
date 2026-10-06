@@ -4,51 +4,371 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Dual N-Back Pro V6 (Synced)</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#121212;--fg:#e0e0e0;--p:#2196F3;--s:#4CAF50;--d:#333;--g:#FFD700}
-body{margin:0;overflow:hidden;background:var(--bg);color:var(--fg);font-family:monospace;height:100dvh;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
-#overlay{position:fixed;inset:0;background:rgba(0,0,0,.96);display:flex;flex-direction:column;place-content:center;align-items:center;gap:15px;z-index:100;transition:opacity 0.2s}
-.setting-row{display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:1.2rem;width:220px}
-input[type=number]{background:#333;border:1px solid #555;color:#fff;font-size:1.2rem;padding:5px;width:60px;text-align:center;border-radius:6px}
-#final-score{font-size:2.2rem;color:var(--p);margin-bottom:5px;display:none;text-align:center}
-#final-score span.ratio{font-size:3rem;font-weight:bold;letter-spacing:4px}
-#leaderboard{background:#1e1e1e;padding:15px;border-radius:10px;width:280px;border:1px solid #333;margin-top:10px}
-.lb-title{text-align:center;color:var(--g);font-weight:bold;margin-bottom:10px;border-bottom:1px solid #444;padding-bottom:5px}
-.lb-row{display:flex;justify-content:space-between;font-size:1rem;padding:4px 0}
-#start{padding:15px 50px;font-size:1.5rem;background:var(--p);color:#fff;border:0;border-radius:8px;font-weight:bold;cursor:pointer;margin-top:10px}
-#stats{padding:12px 15px;display:grid;grid-template-columns:1fr 2fr 1fr;text-align:center;font-size:1.1rem;background:#1e1e1e;border-bottom:1px solid #333}
-#game{flex:1;display:flex;place-content:center;place-items:center;position:relative}
-#grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(90vw,50vh);aspect-ratio:1}
-.cell{background:var(--d);border-radius:4px;transition:background 0.1s ease-out}
-.active{background:var(--p)!important;box-shadow:0 0 15px var(--p)}
-#controls{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;height:20vh}
-.btn{background:#1e1e1e;color:var(--fg);border:2px solid #333;border-radius:12px;font-size:1.2rem;display:grid;place-items:center;transition:all 0.1s}
-.btn:active{background:#333;transform:scale(0.98)}
-.btn.disabled{opacity:0.3;pointer-events:none;border-color:#222}
-.btn-success{background-color:var(--s)!important;color:#fff!important;border-color:var(--s)!important;box-shadow:0 0 15px var(--s)}
-#flash{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;z-index:50}
-.bad{background:rgba(244,67,54,.4)}
+:root {
+  --bg-color: #0f1016;
+  --text-main: #f0f0f0;
+  --text-muted: #8b8d98;
+  --primary: #6366f1;
+  --primary-glow: rgba(99, 102, 241, 0.5);
+  --secondary: #ec4899;
+  --success: #10b981;
+  --danger: #ef4444;
+  --surface: rgba(255, 255, 255, 0.03);
+  --surface-border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.12), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.12), transparent 25%);
+  color: var(--text-main);
+  font-family: 'Outfit', sans-serif;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Glassmorphism Panel Base */
+.glass-panel {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 14, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  place-content: center;
+  align-items: center;
+  gap: 20px;
+  z-index: 100;
+  transition: opacity 0.3s ease;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a8b1ff, #ffb1df);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+  text-shadow: 0 4px 20px rgba(168, 177, 255, 0.2);
+  text-align: center;
+}
+
+#final-score {
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  display: none;
+  text-align: center;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#final-score span.ratio {
+  font-size: 4rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 2px;
+  display: block;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  width: 260px;
+}
+
+input[type=number] {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--surface-border);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+  padding: 8px;
+  width: 70px;
+  text-align: center;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+input[type=number]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+#leaderboard {
+  padding: 20px;
+  width: 300px;
+  margin-top: 10px;
+}
+
+.lb-title {
+  text-align: center;
+  color: var(--primary);
+  font-weight: 800;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+}
+
+.lb-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.lb-row:last-child {
+  border-bottom: none;
+}
+
+#start {
+  padding: 16px 60px;
+  font-size: 1.4rem;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  margin-top: 20px;
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+#start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.6);
+}
+
+#start:active {
+  transform: translateY(1px);
+}
+
+#stats {
+  padding: 15px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--surface-border);
+  font-size: 1.1rem;
+  backdrop-filter: blur(10px);
+}
+
+.stat-group {
+  display: flex;
+  gap: 20px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.score-display {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary);
+  text-shadow: 0 0 15px var(--primary-glow);
+}
+
+#game {
+  flex: 1;
+  display: flex;
+  place-content: center;
+  place-items: center;
+  position: relative;
+  perspective: 1000px;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: min(85vw, 45vh);
+  aspect-ratio: 1;
+  padding: 15px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0,0,0,0.3);
+  border: 1px solid var(--surface-border);
+}
+
+.cell {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 4px 6px rgba(255, 255, 255, 0.02);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.active {
+  background: var(--primary) !important;
+  border-color: var(--primary);
+  box-shadow: 0 0 30px var(--primary-glow), inset 0 0 10px rgba(255, 255, 255, 0.5);
+  transform: scale(0.95);
+}
+
+#controls {
+  padding: 25px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-key {
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px 10px;
+  border-radius: 6px;
+  color: var(--text-muted);
+}
+
+.btn:not(.disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(2px) scale(0.98);
+}
+
+.btn.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.btn-success {
+  background-color: var(--success) !important;
+  color: #fff !important;
+  border-color: var(--success) !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+  transform: scale(1.05);
+}
+
+#flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  z-index: 50;
+}
+
+.bad {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0) 70%);
+}
+
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 600px) {
+  .title { font-size: 2.2rem; }
+  .btn { font-size: 1.1rem; padding: 15px; }
+  #controls { padding: 15px; gap: 10px; }
+  #stats { padding: 10px 15px; }
+}
 </style>
 </head>
 <body>
 <div id="flash"></div>
 
 <div id="overlay">
+  <div class="title">Dual N-Back Pro</div>
+  
   <div id="final-score">
-    <span class="ratio"><span id="end-hits">0</span> / <span id="end-total">0</span></span><br>
-    <small style="font-size:1rem;color:#aaa">correct matches</small>
+    <span class="ratio"><span id="end-hits">0</span> / <span id="end-total">0</span></span>
+    <small>correct matches</small>
   </div>
 
-  <div class="setting-row">
-    <label>N-Level:</label>
-    <input type="number" id="n-input" value="2" min="1" max="9" onchange="renderLB()">
-  </div>
-  <div class="setting-row">
-    <label>Time (s):</label>
-    <input type="number" id="time-input" value="30" min="10" max="300">
+  <div class="glass-panel settings-container">
+    <div class="setting-row">
+      <label>N-Level</label>
+      <input type="number" id="n-input" value="2" min="1" max="9" onchange="renderLB()">
+    </div>
+    <div class="setting-row">
+      <label>Time (s)</label>
+      <input type="number" id="time-input" value="30" min="10" max="300">
+    </div>
   </div>
 
-  <div id="leaderboard">
+  <div id="leaderboard" class="glass-panel">
     <div class="lb-title">TOP SCORES (N-<span id="lb-n">2</span>)</div>
     <div id="lb-list"></div>
   </div>
@@ -57,16 +377,40 @@ input[type=number]{background:#333;border:1px solid #555;color:#fff;font-size:1.
 </div>
 
 <div id="stats">
-  <span style="text-align:left">N: <b id="n-display">2</b> &nbsp; T: <b id="time-display">30</b></span>
-  <span style="font-size:1.4rem;font-weight:bold"><b id="hits-display">0</b> / <b id="total-display">0</b></span>
-  <span style="text-align:right;color:#aaa;font-size:0.95rem">FA: <b id="fa-display">0</b></span>
+  <div class="stat-group">
+    <div class="stat-item">
+      <span class="stat-label">Level</span>
+      <span class="stat-value" id="n-display">2</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Time</span>
+      <span class="stat-value" id="time-display">30</span>
+    </div>
+  </div>
+  
+  <div class="score-display">
+    <span id="hits-display">0</span> <span style="color:var(--text-muted);font-size:1.2rem">/</span> <span id="total-display" style="font-size:1.2rem;color:var(--text-main)">0</span>
+  </div>
+  
+  <div class="stat-group">
+    <div class="stat-item">
+      <span class="stat-label">False Alarms</span>
+      <span class="stat-value" style="color:var(--danger)" id="fa-display">0</span>
+    </div>
+  </div>
 </div>
 
 <div id="game"><div id="grid"></div></div>
 
 <div id="controls">
-  <button class="btn disabled" id="btn-a">Audio Match (A)</button>
-  <button class="btn disabled" id="btn-p">Position Match (L)</button>
+  <button class="btn disabled" id="btn-a">
+    Audio Match
+    <span class="btn-key">Key: A</span>
+  </button>
+  <button class="btn disabled" id="btn-p">
+    Position Match
+    <span class="btn-key">Key: L</span>
+  </button>
 </div>
 
 <script>
