@@ -461,16 +461,19 @@ const sfx={
     miss:()=>{playTone(150,'square',0.2,0.1);flash('bad');}
 };
 
-const loadAud = () => {
+const loadAud = async () => {
     // Prime audio elements for mobile browsers by playing and pausing them silently
-    LETTERS.forEach(l => {
+    const promises = LETTERS.map(l => {
         audCache[l].volume = 0;
-        audCache[l].play().then(() => {
+        return audCache[l].play().then(() => {
             audCache[l].pause();
             audCache[l].currentTime = 0;
             audCache[l].volume = 1;
-        }).catch(e => {});
+        }).catch(e => {
+            audCache[l].volume = 1;
+        });
     });
+    await Promise.all(promises);
 };
 
 const rng=m=>{let a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%m};
@@ -578,7 +581,7 @@ function check(type){
     updateStats();
 }
 
-function startGame(){
+async function startGame(){
     state.n=parseInt(document.getElementById('n-input').value)||2;
     state.timeLeft=parseInt(document.getElementById('time-input').value)||30;
     N_DISP.textContent=state.n;
@@ -587,7 +590,7 @@ function startGame(){
     OVERLAY.style.display='none';
     BTNS.a.className='btn disabled';
     BTNS.p.className='btn disabled';
-    loadAud();
+    await loadAud();
 
     state.active=true;
     state.hist=[];
