@@ -435,7 +435,12 @@ const G=document.getElementById('grid'),
       LETTERS=['A','B','C','H','K','L','M','O','P','T'];
 
 let state={n:2,hist:[],hits:0,totalMatches:0,falseAlarms:0,active:false,input:{a:false,p:false},timer:null,gameTimer:null,timeLeft:30},
-    audCache={}, synth=window.speechSynthesis, selectedVoice=null;
+    audCache={};
+
+LETTERS.forEach(l => {
+    audCache[l] = new Audio('audio/' + l + '.mp3');
+    audCache[l].preload = 'auto';
+});
 
 for(let i=0;i<9;i++)G.appendChild(document.createElement('div')).className='cell';
 const cells=G.children;
@@ -456,26 +461,15 @@ const sfx={
     miss:()=>{playTone(150,'square',0.2,0.1);flash('bad');}
 };
 
-function selectVoice(){
-    const v=synth.getVoices();
-    // Seek out the most pleasant built-in voices across iOS, Android, and Windows
-    selectedVoice = v.find(x => x.name.includes('Samantha') || x.name.includes('Daniel')) || // Apple
-                    v.find(x => x.name.includes('Google UK English Female') || x.name.includes('Google US English')) || // Android
-                    v.find(x => x.name.includes('Aria') || x.name.includes('Natural')) || // Windows
-                    v.find(x => x.lang === 'en-US' && x.localService) || 
-                    v.find(x => x.lang.startsWith('en')) || 
-                    v[0];
-}
-if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=selectVoice;
-
-const loadAud=()=>{
-    selectVoice();
-    LETTERS.forEach(x=>{
-        audCache[x]=new SpeechSynthesisUtterance(x);
-        audCache[x].voice=selectedVoice;
-        audCache[x].lang='en-US';
-        audCache[x].rate=0.85;
-        audCache[x].pitch=1.0;
+const loadAud = () => {
+    // Prime audio elements for mobile browsers by playing and pausing them silently
+    LETTERS.forEach(l => {
+        audCache[l].volume = 0;
+        audCache[l].play().then(() => {
+            audCache[l].pause();
+            audCache[l].currentTime = 0;
+            audCache[l].volume = 1;
+        }).catch(e => {});
     });
 };
 
@@ -552,10 +546,9 @@ function turn(){
         if(l===ref.l) state.totalMatches++;
     }
 
-    synth.cancel();
     sfx.pop();
-    if(audCache[l])synth.speak(audCache[l]);
-    else{let u=new SpeechSynthesisUtterance(l);u.voice=selectedVoice;u.rate=0.95;u.pitch=1.0;synth.speak(u);}
+    audCache[l].currentTime = 0;
+    audCache[l].play().catch(e => {});
 
     setTimeout(()=>{
         if(!state.active)return;
@@ -594,12 +587,7 @@ function startGame(){
     OVERLAY.style.display='none';
     BTNS.a.className='btn disabled';
     BTNS.p.className='btn disabled';
-    if(synth.speaking)synth.cancel();
     loadAud();
-    
-    let wakeUp = new SpeechSynthesisUtterance('');
-    wakeUp.volume = 0;
-    synth.speak(wakeUp);
 
     state.active=true;
     state.hist=[];
@@ -627,7 +615,6 @@ window.addEventListener('keydown',e=>{
 });
 
 renderLB();
-selectVoice();
 </script>
 </body>
 </html>
