@@ -458,7 +458,8 @@ const sfx={
 
 function selectVoice(){
     const v=synth.getVoices();
-    selectedVoice=v.find(x=>x.name.includes('Premium')||x.name.includes('Enhanced'))||
+    selectedVoice=v.find(x=>x.localService && x.lang==='en-US' && (x.name.includes('Samantha')||x.name.includes('Alex')))||
+                  v.find(x=>x.localService && x.lang==='en-US')||
                   v.find(x=>x.name.includes('Google US English'))||
                   v.find(x=>x.name.includes('Zira'))||
                   v.find(x=>x.lang==='en-US')||v[0];
@@ -471,7 +472,7 @@ const loadAud=()=>{
         audCache[x]=new SpeechSynthesisUtterance(x);
         audCache[x].voice=selectedVoice;
         audCache[x].lang='en-US';
-        audCache[x].rate=0.95;
+        audCache[x].rate=0.85;
         audCache[x].pitch=1.0;
     });
 };
@@ -593,6 +594,11 @@ function startGame(){
     BTNS.p.className='btn disabled';
     if(synth.speaking)synth.cancel();
     loadAud();
+    
+    let wakeUp = new SpeechSynthesisUtterance('');
+    wakeUp.volume = 0;
+    synth.speak(wakeUp);
+
     state.active=true;
     state.hist=[];
     state.hits=0;
