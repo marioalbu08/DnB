@@ -437,15 +437,18 @@ const G=document.getElementById('grid'),
 let state={n:2,hist:[],hits:0,totalMatches:0,falseAlarms:0,active:false,input:{a:false,p:false},timer:null,gameTimer:null,timeLeft:30},
     audCache={};
 
-LETTERS.forEach(l => {
-    audCache[l] = new Audio('audio/' + l + '.mp3');
-    audCache[l].preload = 'auto';
+const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+
+LETTERS.forEach(async l => {
+    try {
+        const res = await fetch('audio/' + l + '.mp3');
+        const buf = await res.arrayBuffer();
+        audCache[l] = await audioCtx.decodeAudioData(buf);
+    } catch(e) { console.error(e); }
 });
 
 for(let i=0;i<9;i++)G.appendChild(document.createElement('div')).className='cell';
 const cells=G.children;
-
-const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
 const playTone=(f,t,d,v)=>{
     if(audioCtx.state==='suspended')audioCtx.resume();
     const o=audioCtx.createOscillator(),g=audioCtx.createGain();
@@ -462,18 +465,7 @@ const sfx={
 };
 
 const loadAud = async () => {
-    // Prime audio elements for mobile browsers by playing and pausing them silently
-    const promises = LETTERS.map(l => {
-        audCache[l].volume = 0;
-        return audCache[l].play().then(() => {
-            audCache[l].pause();
-            audCache[l].currentTime = 0;
-            audCache[l].volume = 1;
-        }).catch(e => {
-            audCache[l].volume = 1;
-        });
-    });
-    await Promise.all(promises);
+    if(audioCtx.state === 'suspended') await audioCtx.resume();
 };
 
 const rng=m=>{let a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%m};
@@ -550,8 +542,12 @@ function turn(){
     }
 
     sfx.pop();
-    audCache[l].currentTime = 0;
-    audCache[l].play().catch(e => {});
+    if(audCache[l]) {
+        const src = audioCtx.createBufferSource();
+        src.buffer = audCache[l];
+        src.connect(audioCtx.destination);
+        src.start();
+    }
 
     setTimeout(()=>{
         if(!state.active)return;
