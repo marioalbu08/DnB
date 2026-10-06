@@ -458,11 +458,13 @@ const sfx={
 
 function selectVoice(){
     const v=synth.getVoices();
-    selectedVoice=v.find(x=>x.localService && x.lang==='en-US' && (x.name.includes('Samantha')||x.name.includes('Alex')))||
-                  v.find(x=>x.localService && x.lang==='en-US')||
-                  v.find(x=>x.name.includes('Google US English'))||
-                  v.find(x=>x.name.includes('Zira'))||
-                  v.find(x=>x.lang==='en-US')||v[0];
+    // Seek out the most pleasant built-in voices across iOS, Android, and Windows
+    selectedVoice = v.find(x => x.name.includes('Samantha') || x.name.includes('Daniel')) || // Apple
+                    v.find(x => x.name.includes('Google UK English Female') || x.name.includes('Google US English')) || // Android
+                    v.find(x => x.name.includes('Aria') || x.name.includes('Natural')) || // Windows
+                    v.find(x => x.lang === 'en-US' && x.localService) || 
+                    v.find(x => x.lang.startsWith('en')) || 
+                    v[0];
 }
 if(speechSynthesis.onvoiceschanged!==undefined)speechSynthesis.onvoiceschanged=selectVoice;
 
